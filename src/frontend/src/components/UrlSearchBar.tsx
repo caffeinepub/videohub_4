@@ -25,8 +25,8 @@ function resolveSearch(query: string): string {
     return "https://" + trimmed;
   }
 
-  // Otherwise, do a Google search
-  return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+  // Otherwise, do a DuckDuckGo search
+  return `https://duckduckgo.com/?q=${encodeURIComponent(trimmed)}`;
 }
 
 export default function UrlSearchBar({
@@ -80,7 +80,7 @@ export default function UrlSearchBar({
           </button>
         </form>
         <p className="text-center text-xs text-muted-foreground mt-2 font-['Share_Tech_Mono']">
-          Enter a URL to visit or keywords to search Google
+          Enter a URL to visit or keywords to search DuckDuckGo
         </p>
       </div>
     );
