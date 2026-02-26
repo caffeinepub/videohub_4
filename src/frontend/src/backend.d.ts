@@ -24,6 +24,7 @@ export interface Video {
     createdAt: bigint;
     description: string;
     viewCount: bigint;
+    videoUrl?: string;
 }
 export interface Comment {
     id: bigint;
@@ -45,6 +46,7 @@ export interface backendInterface {
     addComment(videoId: string, content: string): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createVideo(title: string, description: string, video: ExternalBlob, thumbnail: ExternalBlob): Promise<string>;
+    createVideoByUrl(title: string, description: string, videoUrl: string, thumbnail: ExternalBlob): Promise<string>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCommentsForVideo(videoId: string): Promise<Array<Comment>>;

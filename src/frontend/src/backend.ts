@@ -99,6 +99,7 @@ export interface Video {
     createdAt: bigint;
     description: string;
     viewCount: bigint;
+    videoUrl?: string;
 }
 export interface Comment {
     id: bigint;
@@ -138,6 +139,7 @@ export interface backendInterface {
     addComment(videoId: string, content: string): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createVideo(title: string, description: string, video: ExternalBlob, thumbnail: ExternalBlob): Promise<string>;
+    createVideoByUrl(title: string, description: string, videoUrl: string, thumbnail: ExternalBlob): Promise<string>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCommentsForVideo(videoId: string): Promise<Array<Comment>>;
@@ -295,6 +297,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async createVideoByUrl(arg0: string, arg1: string, arg2: string, arg3: ExternalBlob): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createVideoByUrl(arg0, arg1, arg2, await to_candid_ExternalBlob_n10(this._uploadFile, this._downloadFile, arg3));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createVideoByUrl(arg0, arg1, arg2, await to_candid_ExternalBlob_n10(this._uploadFile, this._downloadFile, arg3));
+            return result;
+        }
+    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -369,14 +385,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getVideo(arg0);
-                return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getVideo(arg0);
-            return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
         }
     }
     async getVideosByCreator(arg0: Principal): Promise<Array<Video>> {
@@ -493,7 +509,10 @@ function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: Externa
 function from_candid_opt_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-async function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Video]): Promise<Video | null> {
+function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
+}
+async function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Video]): Promise<Video | null> {
     return value.length === 0 ? null : await from_candid_Video_n15(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -512,6 +531,7 @@ async function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promi
     createdAt: bigint;
     description: string;
     viewCount: bigint;
+    videoUrl: [] | [string];
 }): Promise<{
     id: string;
     title: string;
@@ -522,6 +542,7 @@ async function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promi
     createdAt: bigint;
     description: string;
     viewCount: bigint;
+    videoUrl?: string;
 }> {
     return {
         id: value.id,
@@ -532,7 +553,8 @@ async function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promi
         video: await from_candid_ExternalBlob_n17(_uploadFile, _downloadFile, value.video),
         createdAt: value.createdAt,
         description: value.description,
-        viewCount: value.viewCount
+        viewCount: value.viewCount,
+        videoUrl: record_opt_to_undefined(from_candid_opt_n18(_uploadFile, _downloadFile, value.videoUrl))
     };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

@@ -138,10 +138,45 @@ export default function VideoPage() {
     );
   }
 
-  const videoUrl = video.video.getDirectURL();
+  const blobVideoUrl = video.video.getDirectURL();
   const creatorDisplay =
     creatorProfile?.displayName ||
     video.creator.toString().slice(0, 8) + "...";
+
+  /** Convert a YouTube watch/short URL to an embed URL, or return null if not YouTube */
+  function getYouTubeEmbedUrl(url: string): string | null {
+    try {
+      const parsed = new URL(url);
+      // youtube.com/watch?v=ID
+      if (
+        (parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com") &&
+        parsed.pathname === "/watch"
+      ) {
+        const v = parsed.searchParams.get("v");
+        if (v) return `https://www.youtube.com/embed/${v}`;
+      }
+      // youtu.be/ID
+      if (parsed.hostname === "youtu.be") {
+        const id = parsed.pathname.slice(1);
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      // youtube.com/shorts/ID
+      if (
+        (parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com") &&
+        parsed.pathname.startsWith("/shorts/")
+      ) {
+        const id = parsed.pathname.replace("/shorts/", "");
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+    } catch {
+      // invalid URL — fall through
+    }
+    return null;
+  }
+
+  function isDirectVideoUrl(url: string): boolean {
+    return /\.(mp4|webm|ogg|mov|avi|mkv)(\?.*)?$/i.test(url);
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -160,15 +195,54 @@ export default function VideoPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player */}
           <div className="rounded-xl overflow-hidden bg-black border border-border animate-fade-in">
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              controls
-              className="w-full aspect-video"
-              preload="metadata"
-            >
-              <track kind="captions" />
-            </video>
+            {video.videoUrl ? (
+              (() => {
+                const youtubeEmbed = getYouTubeEmbedUrl(video.videoUrl);
+                if (youtubeEmbed) {
+                  return (
+                    <iframe
+                      src={youtubeEmbed}
+                      className="w-full aspect-video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={video.title}
+                    />
+                  );
+                }
+                if (isDirectVideoUrl(video.videoUrl)) {
+                  return (
+                    <video
+                      ref={videoRef}
+                      src={video.videoUrl}
+                      controls
+                      className="w-full aspect-video"
+                      preload="metadata"
+                    >
+                      <track kind="captions" />
+                    </video>
+                  );
+                }
+                return (
+                  <iframe
+                    src={video.videoUrl}
+                    className="w-full aspect-video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={video.title}
+                  />
+                );
+              })()
+            ) : (
+              <video
+                ref={videoRef}
+                src={blobVideoUrl}
+                controls
+                className="w-full aspect-video"
+                preload="metadata"
+              >
+                <track kind="captions" />
+              </video>
+            )}
           </div>
 
           {/* Title & Meta */}

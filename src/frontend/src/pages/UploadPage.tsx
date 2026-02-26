@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ExternalBlob } from "../backend";
-import { useCreateVideo } from "../hooks/useQueries";
+import { useCreateVideo, useCreateVideoByUrl } from "../hooks/useQueries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +15,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Film,
+  Link as LinkIcon,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type UploadMode = "file" | "url";
 type UploadStatus = "idle" | "uploading" | "done" | "error";
 
 interface UploadState {
@@ -138,19 +141,26 @@ function FileDropZone({
 export default function UploadPage() {
   const navigate = useNavigate();
 
+  const [uploadMode, setUploadMode] = useState<UploadMode>("file");
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
-  const [videoUpload, setVideoUpload] =
-    useState<UploadState>(initialUploadState);
-  const [thumbnailUpload, setThumbnailUpload] =
-    useState<UploadState>(initialUploadState);
+  // File mode state
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUpload, setVideoUpload] = useState<UploadState>(initialUploadState);
+
+  // URL mode state
+  const [videoUrl, setVideoUrl] = useState("");
+
+  // Shared thumbnail state
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailUpload, setThumbnailUpload] = useState<UploadState>(initialUploadState);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateAsync: createVideo } = useCreateVideo();
+  const { mutateAsync: createVideoByUrl } = useCreateVideoByUrl();
 
   const handleVideoSelect = (file: File) => {
     setVideoFile(file);
@@ -162,6 +172,14 @@ export default function UploadPage() {
     setThumbnailUpload({ status: "idle", progress: 0, fileName: file.name });
   };
 
+  const handleModeSwitch = (mode: UploadMode) => {
+    setUploadMode(mode);
+    // Reset mode-specific state when switching
+    setVideoFile(null);
+    setVideoUpload(initialUploadState);
+    setVideoUrl("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -169,10 +187,19 @@ export default function UploadPage() {
       toast.error("Please enter a title");
       return;
     }
-    if (!videoFile) {
-      toast.error("Please select a video file");
-      return;
+
+    if (uploadMode === "file") {
+      if (!videoFile) {
+        toast.error("Please select a video file");
+        return;
+      }
+    } else {
+      if (!videoUrl.trim()) {
+        toast.error("Please enter a video URL");
+        return;
+      }
     }
+
     if (!thumbnailFile) {
       toast.error("Please select a thumbnail image");
       return;
@@ -181,51 +208,56 @@ export default function UploadPage() {
     setIsSubmitting(true);
 
     try {
-      // Read both files in parallel
-      const [videoBytes, thumbnailBytes] = await Promise.all([
-        videoFile.arrayBuffer().then((buf) => new Uint8Array(buf)),
-        thumbnailFile.arrayBuffer().then((buf) => new Uint8Array(buf)),
-      ]);
+      const thumbnailBytes = await thumbnailFile
+        .arrayBuffer()
+        .then((buf) => new Uint8Array(buf));
 
-      setVideoUpload((prev) => ({ ...prev, status: "uploading", progress: 0 }));
-      setThumbnailUpload((prev) => ({
-        ...prev,
-        status: "uploading",
-        progress: 0,
-      }));
+      setThumbnailUpload((prev) => ({ ...prev, status: "uploading", progress: 0 }));
 
-      const videoBlob = ExternalBlob.fromBytes(videoBytes).withUploadProgress(
-        (pct) => setVideoUpload((prev) => ({ ...prev, progress: pct }))
+      const thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes).withUploadProgress(
+        (pct) => setThumbnailUpload((prev) => ({ ...prev, progress: pct }))
       );
 
-      const thumbnailBlob = ExternalBlob.fromBytes(
-        thumbnailBytes
-      ).withUploadProgress((pct) =>
-        setThumbnailUpload((prev) => ({ ...prev, progress: pct }))
-      );
+      let videoId: string;
 
-      const videoId = await createVideo({
-        title: title.trim(),
-        description: description.trim(),
-        video: videoBlob,
-        thumbnail: thumbnailBlob,
-      });
+      if (uploadMode === "file" && videoFile) {
+        const videoBytes = await videoFile.arrayBuffer().then((buf) => new Uint8Array(buf));
 
-      setVideoUpload((prev) => ({ ...prev, status: "done", progress: 100 }));
-      setThumbnailUpload((prev) => ({
-        ...prev,
-        status: "done",
-        progress: 100,
-      }));
+        setVideoUpload((prev) => ({ ...prev, status: "uploading", progress: 0 }));
 
-      toast.success("Video uploaded successfully!");
+        const videoBlob = ExternalBlob.fromBytes(videoBytes).withUploadProgress(
+          (pct) => setVideoUpload((prev) => ({ ...prev, progress: pct }))
+        );
+
+        videoId = await createVideo({
+          title: title.trim(),
+          description: description.trim(),
+          video: videoBlob,
+          thumbnail: thumbnailBlob,
+        });
+
+        setVideoUpload((prev) => ({ ...prev, status: "done", progress: 100 }));
+      } else {
+        videoId = await createVideoByUrl({
+          title: title.trim(),
+          description: description.trim(),
+          videoUrl: videoUrl.trim(),
+          thumbnail: thumbnailBlob,
+        });
+      }
+
+      setThumbnailUpload((prev) => ({ ...prev, status: "done", progress: 100 }));
+
+      toast.success("Video published successfully!");
 
       setTimeout(() => {
         navigate({ to: "/video/$id", params: { id: videoId } });
       }, 800);
     } catch (err) {
       console.error("Upload error:", err);
-      setVideoUpload((prev) => ({ ...prev, status: "error" }));
+      if (uploadMode === "file") {
+        setVideoUpload((prev) => ({ ...prev, status: "error" }));
+      }
       setThumbnailUpload((prev) => ({ ...prev, status: "error" }));
       toast.error("Upload failed. Please try again.");
       setIsSubmitting(false);
@@ -235,7 +267,7 @@ export default function UploadPage() {
   const canSubmit =
     !isSubmitting &&
     title.trim() !== "" &&
-    videoFile !== null &&
+    (uploadMode === "file" ? videoFile !== null : videoUrl.trim() !== "") &&
     thumbnailFile !== null;
 
   return (
@@ -251,6 +283,36 @@ export default function UploadPage() {
             Share your content with the VideoHub community
           </p>
         </div>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="flex gap-1 p-1 bg-muted rounded-lg mb-6 animate-fade-in-up">
+        <button
+          type="button"
+          onClick={() => handleModeSwitch("file")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all",
+            uploadMode === "file"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <HardDrive className="w-4 h-4" />
+          Upload File
+        </button>
+        <button
+          type="button"
+          onClick={() => handleModeSwitch("url")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all",
+            uploadMode === "url"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <LinkIcon className="w-4 h-4" />
+          Paste URL
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -292,37 +354,76 @@ export default function UploadPage() {
           </p>
         </div>
 
-        {/* File Uploads */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up stagger-3">
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              Video File <span className="vh-crimson-text">*</span>
-            </Label>
-            <FileDropZone
-              accept="video/*"
-              label="Select Video"
-              icon={Video}
-              uploadState={videoUpload}
-              onFileSelect={handleVideoSelect}
-            />
-          </div>
+        {/* Video Input — File or URL */}
+        <div className="animate-fade-in-up stagger-3">
+          {uploadMode === "file" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Video File <span className="vh-crimson-text">*</span>
+                </Label>
+                <FileDropZone
+                  accept="video/*"
+                  label="Select Video"
+                  icon={Video}
+                  uploadState={videoUpload}
+                  onFileSelect={handleVideoSelect}
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              Thumbnail <span className="vh-crimson-text">*</span>
-            </Label>
-            <FileDropZone
-              accept="image/*"
-              label="Select Thumbnail"
-              icon={Image}
-              uploadState={thumbnailUpload}
-              onFileSelect={handleThumbnailSelect}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Thumbnail <span className="vh-crimson-text">*</span>
+                </Label>
+                <FileDropZone
+                  accept="image/*"
+                  label="Select Thumbnail"
+                  icon={Image}
+                  uploadState={thumbnailUpload}
+                  onFileSelect={handleThumbnailSelect}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="videoUrl" className="text-sm font-medium">
+                  Video URL <span className="vh-crimson-text">*</span>
+                </Label>
+                <div className="relative">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="videoUrl"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=... or direct .mp4 link"
+                    className="bg-input border-border focus-visible:ring-primary pl-9"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Supports YouTube links and direct video file URLs (.mp4, .webm, etc.)
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Thumbnail <span className="vh-crimson-text">*</span>
+                </Label>
+                <FileDropZone
+                  accept="image/*"
+                  label="Select Thumbnail"
+                  icon={Image}
+                  uploadState={thumbnailUpload}
+                  onFileSelect={handleThumbnailSelect}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Upload Progress Summary */}
-        {isSubmitting && (
+        {/* Upload Progress Summary — file mode only */}
+        {isSubmitting && uploadMode === "file" && (
           <div className="rounded-lg bg-card border border-border p-4 space-y-3 animate-fade-in">
             <p className="text-sm font-semibold flex items-center gap-2">
               <Upload className="w-4 h-4 vh-crimson-text animate-bounce" />
@@ -353,6 +454,26 @@ export default function UploadPage() {
           </div>
         )}
 
+        {/* URL mode upload progress — thumbnail only */}
+        {isSubmitting && uploadMode === "url" && (
+          <div className="rounded-lg bg-card border border-border p-4 space-y-3 animate-fade-in">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Upload className="w-4 h-4 vh-crimson-text animate-bounce" />
+              Publishing your video...
+            </p>
+            <div className="flex items-center gap-3">
+              <Image className="w-4 h-4 text-muted-foreground shrink-0" />
+              <Progress
+                value={thumbnailUpload.progress}
+                className="flex-1 h-1.5"
+              />
+              <span className="text-xs font-mono-vid text-muted-foreground w-10 text-right">
+                {thumbnailUpload.progress}%
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
         <div className="animate-fade-in-up stagger-4">
           <Button
@@ -363,7 +484,7 @@ export default function UploadPage() {
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Upload className="w-4 h-4 animate-bounce" />
-                Uploading...
+                {uploadMode === "file" ? "Uploading..." : "Publishing..."}
               </span>
             ) : (
               <span className="flex items-center gap-2">

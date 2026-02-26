@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -46,6 +46,7 @@ export const Video = IDL.Record({
   'createdAt' : IDL.Int,
   'description' : IDL.Text,
   'viewCount' : IDL.Nat,
+  'videoUrl' : IDL.Opt(IDL.Text),
 });
 
 export const idlService = IDL.Service({
@@ -80,6 +81,11 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createVideo' : IDL.Func(
       [IDL.Text, IDL.Text, ExternalBlob, ExternalBlob],
+      [IDL.Text],
+      [],
+    ),
+  'createVideoByUrl' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, ExternalBlob],
       [IDL.Text],
       [],
     ),
@@ -143,6 +149,7 @@ export const idlFactory = ({ IDL }) => {
     'createdAt' : IDL.Int,
     'description' : IDL.Text,
     'viewCount' : IDL.Nat,
+    'videoUrl' : IDL.Opt(IDL.Text),
   });
   
   return IDL.Service({
@@ -177,6 +184,11 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createVideo' : IDL.Func(
         [IDL.Text, IDL.Text, ExternalBlob, ExternalBlob],
+        [IDL.Text],
+        [],
+      ),
+    'createVideoByUrl' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, ExternalBlob],
         [IDL.Text],
         [],
       ),

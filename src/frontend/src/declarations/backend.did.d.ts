@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -32,6 +32,7 @@ export interface Video {
   'createdAt' : bigint,
   'description' : string,
   'viewCount' : bigint,
+  'videoUrl' : [] | [string],
 }
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
@@ -65,6 +66,10 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createVideo' : ActorMethod<
     [string, string, ExternalBlob, ExternalBlob],
+    string
+  >,
+  'createVideoByUrl' : ActorMethod<
+    [string, string, string, ExternalBlob],
     string
   >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,

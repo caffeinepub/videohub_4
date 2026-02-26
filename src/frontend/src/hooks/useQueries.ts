@@ -155,6 +155,28 @@ export function useCreateVideo() {
   });
 }
 
+export interface CreateVideoByUrlParams {
+  title: string;
+  description: string;
+  videoUrl: string;
+  thumbnail: Parameters<backendInterface["createVideoByUrl"]>[3];
+}
+
+export function useCreateVideoByUrl() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ title, description, videoUrl, thumbnail }: CreateVideoByUrlParams) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.createVideoByUrl(title, description, videoUrl, thumbnail);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+}
+
 // ─── Likes ───────────────────────────────────────────────────────────────────
 
 export function useHasUserLikedVideo(videoId: string) {

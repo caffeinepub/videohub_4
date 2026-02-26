@@ -73,14 +73,19 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Space Grotesk", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        sans: ["VT323", "Share Tech Mono", "monospace"],
+        mono: ["Share Tech Mono", "monospace"],
+        pixel: ["'Press Start 2P'", "monospace"],
+        vt: ["VT323", "monospace"],
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
         card: "0 4px 24px oklch(0 0 0 / 40%)",
         "card-hover": "0 12px 40px oklch(0 0 0 / 50%)",
         crimson: "0 0 20px oklch(0.57 0.22 15 / 30%)",
+        "neon-green": "0 0 20px oklch(0.85 0.18 140 / 50%)",
+        "neon-amber": "0 0 20px oklch(0.82 0.18 80 / 50%)",
+        "neon-cyan": "0 0 20px oklch(0.85 0.18 200 / 50%)",
       },
       keyframes: {
         "accordion-down": {

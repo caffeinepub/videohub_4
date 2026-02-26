@@ -12,6 +12,8 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
+
+
 actor {
   // Prefabricated components
   include MixinStorage();
@@ -28,6 +30,7 @@ actor {
     thumbnail : Storage.ExternalBlob;
     title : Text;
     video : Storage.ExternalBlob;
+    videoUrl : ?Text;
     viewCount : Nat;
   };
 
@@ -66,6 +69,31 @@ actor {
       thumbnail;
       title;
       video;
+      videoUrl = null;
+      viewCount = 0;
+    };
+
+    videos.add(videoId, newVideo);
+    videoId;
+  };
+
+  public shared ({ caller }) func createVideoByUrl(title : Text, description : Text, videoUrl : Text, thumbnail : Storage.ExternalBlob) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create videos");
+    };
+
+    let videoId = title;
+
+    let newVideo : Video = {
+      createdAt = Time.now();
+      creator = caller;
+      description;
+      id = videoId;
+      likeCount = 0;
+      thumbnail;
+      title;
+      video = thumbnail;
+      videoUrl = ?videoUrl;
       viewCount = 0;
     };
 
