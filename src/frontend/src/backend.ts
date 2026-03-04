@@ -101,6 +101,12 @@ export interface Video {
     viewCount: bigint;
     videoUrl?: string;
 }
+export interface LeaderboardEntry {
+    displayName: string;
+    player: Principal;
+    score: bigint;
+    timestamp: bigint;
+}
 export interface Comment {
     id: bigint;
     content: string;
@@ -144,6 +150,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getCommentsForVideo(videoId: string): Promise<Array<Comment>>;
     getFeed(page: bigint, pageSize: bigint): Promise<Array<Video>>;
+    getLeaderboard(game: string, limit: bigint): Promise<Array<LeaderboardEntry>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVideo(id: string): Promise<Video | null>;
     getVideosByCreator(creator: Principal): Promise<Array<Video>>;
@@ -151,6 +158,7 @@ export interface backendInterface {
     incrementViewCount(videoId: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    submitScore(game: string, score: bigint): Promise<void>;
     toggleLike(videoId: string): Promise<boolean>;
     updateUserProfile(displayName: string, bio: string): Promise<void>;
 }
@@ -367,6 +375,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getLeaderboard(arg0: string, arg1: bigint): Promise<Array<LeaderboardEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLeaderboard(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLeaderboard(arg0, arg1);
+            return result;
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -462,6 +484,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveCallerUserProfile(arg0);
+            return result;
+        }
+    }
+    async submitScore(arg0: string, arg1: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitScore(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitScore(arg0, arg1);
             return result;
         }
     }

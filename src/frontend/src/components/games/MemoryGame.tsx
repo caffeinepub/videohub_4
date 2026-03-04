@@ -34,7 +34,11 @@ function buildDeck(): Card[] {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export default function MemoryGame() {
+interface MemoryGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function MemoryGame({ onGameOver }: MemoryGameProps) {
   const [cards, setCards] = useState<Card[]>(() => buildDeck());
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -43,6 +47,7 @@ export default function MemoryGame() {
   const [won, setWon] = useState(false);
   const [locked, setLocked] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onGameOverCalledRef = useRef(false);
 
   // ─── Timer ────────────────────────────────────────────────────────────────
 
@@ -63,8 +68,14 @@ export default function MemoryGame() {
     if (started && cards.every((c) => c.isMatched)) {
       setWon(true);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (!onGameOverCalledRef.current) {
+        onGameOverCalledRef.current = true;
+        // Score: higher is better — penalize moves, reward speed
+        const perfScore = Math.max(0, 1000 - moves * 10);
+        onGameOver?.(perfScore);
+      }
     }
-  }, [cards, started]);
+  }, [cards, started, moves, onGameOver]);
 
   // ─── Reset ────────────────────────────────────────────────────────────────
 
@@ -77,6 +88,7 @@ export default function MemoryGame() {
     setStarted(false);
     setWon(false);
     setLocked(false);
+    onGameOverCalledRef.current = false;
   }, []);
 
   // ─── Click handler ────────────────────────────────────────────────────────

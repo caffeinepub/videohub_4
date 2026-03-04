@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Gamepad2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import SnakeGame from "../components/games/SnakeGame";
 import MemoryGame from "../components/games/MemoryGame";
@@ -7,6 +8,13 @@ import ReactionGame from "../components/games/ReactionGame";
 import TetrisGame from "../components/games/TetrisGame";
 import PongGame from "../components/games/PongGame";
 import WhackAMoleGame from "../components/games/WhackAMoleGame";
+import SpaceInvadersGame from "../components/games/SpaceInvadersGame";
+import BreakoutGame from "../components/games/BreakoutGame";
+import FlappyBirdGame from "../components/games/FlappyBirdGame";
+import Game2048 from "../components/games/Game2048";
+import LeaderboardPanel from "../components/LeaderboardPanel";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useSubmitScore } from "../hooks/useQueries";
 
 // ─── Game registry ────────────────────────────────────────────────────────────
 
@@ -15,7 +23,7 @@ interface GameEntry {
   emoji: string;
   title: string;
   description: string;
-  component: React.ComponentType;
+  component: React.ComponentType<{ onGameOver?: (score: number) => void }>;
 }
 
 const GAMES: GameEntry[] = [
@@ -61,15 +69,65 @@ const GAMES: GameEntry[] = [
     description: "Whack moles as they pop up — 30 seconds!",
     component: WhackAMoleGame,
   },
+  {
+    id: "spaceinvaders",
+    emoji: "👾",
+    title: "Space Invaders",
+    description: "Shoot alien invaders before they reach Earth!",
+    component: SpaceInvadersGame,
+  },
+  {
+    id: "breakout",
+    emoji: "🧱",
+    title: "Breakout",
+    description: "Break all the bricks with your paddle and ball.",
+    component: BreakoutGame,
+  },
+  {
+    id: "flappy",
+    emoji: "🐦",
+    title: "Flappy Bird",
+    description: "Tap to flap through the pipes without crashing.",
+    component: FlappyBirdGame,
+  },
+  {
+    id: "2048",
+    emoji: "🔢",
+    title: "2048",
+    description: "Slide tiles and reach 2048 to win!",
+    component: Game2048,
+  },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function GamesPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const { identity } = useInternetIdentity();
+  const submitScore = useSubmitScore();
 
   const activeGame = GAMES.find((g) => g.id === activeId);
   const ActiveComponent = activeGame?.component ?? null;
+
+  const handleGameOver = useCallback(
+    (score: number) => {
+      if (!activeId) return;
+      if (identity) {
+        submitScore.mutate(
+          { game: activeId, score: BigInt(Math.round(score)) },
+          {
+            onSuccess: () => {
+              toast.success("Score saved!", {
+                description: `${score.toLocaleString()} pts recorded on the leaderboard`,
+                duration: 3000,
+              });
+            },
+          }
+        );
+      }
+    },
+    [activeId, identity, submitScore]
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,6 +171,16 @@ export default function GamesPage() {
                   style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "0.5rem" }}
                 >
                   ▶
+                </span>
+              )}
+
+              {/* Trophy indicator for all games */}
+              {!isActive && (
+                <span
+                  className="absolute top-3 right-3 text-xs opacity-30 group-hover:opacity-60 transition-opacity"
+                  title="Leaderboard available"
+                >
+                  🏆
                 </span>
               )}
 
@@ -182,7 +250,23 @@ export default function GamesPage() {
 
           {/* Game content */}
           <div className="p-6 flex justify-center overflow-x-auto">
-            <ActiveComponent />
+            <ActiveComponent onGameOver={handleGameOver} />
+          </div>
+
+          {/* Leaderboard */}
+          <div className="px-6 pb-6">
+            {!identity && (
+              <p
+                className="text-[0.35rem] text-center mb-2"
+                style={{
+                  fontFamily: "'Share Tech Mono', monospace",
+                  color: "oklch(var(--vh-neon-green) / 0.4)",
+                }}
+              >
+                Sign in to save your scores to the leaderboard
+              </p>
+            )}
+            <LeaderboardPanel gameId={activeGame.id} gameName={activeGame.title} />
           </div>
         </div>
       )}

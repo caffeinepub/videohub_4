@@ -25,7 +25,11 @@ function getRating(ms: number): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export default function ReactionGame() {
+interface ReactionGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function ReactionGame({ onGameOver }: ReactionGameProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [reactionMs, setReactionMs] = useState<number | null>(null);
   const [best, setBest] = useState<number | null>(null);
@@ -70,12 +74,18 @@ export default function ReactionGame() {
       setReactionMs(ms);
       setRounds((prev) => {
         const updated = [...prev, ms];
+        // When all rounds done, fire onGameOver with best score
+        if (updated.length >= MAX_ROUNDS) {
+          const bestMs = Math.min(...updated);
+          const scoreVal = Math.max(0, 1000 - bestMs);
+          onGameOver?.(scoreVal);
+        }
         return updated;
       });
       setBest((prev) => (prev === null || ms < prev ? ms : prev));
       setPhase("result");
     }
-  }, [phase, startRound]);
+  }, [phase, startRound, onGameOver]);
 
   // ─── Reset ──────────────────────────────────────────────────────────────
 

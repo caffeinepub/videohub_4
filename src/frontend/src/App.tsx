@@ -13,6 +13,7 @@ import VideoPage from "./pages/VideoPage";
 import UploadPage from "./pages/UploadPage";
 import ProfilePage from "./pages/ProfilePage";
 import GamesPage from "./pages/GamesPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfileSetupModal from "./components/ProfileSetupModal";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
@@ -90,12 +91,19 @@ const gamesRoute = createRoute({
   component: GamesPage,
 });
 
+const leaderboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/leaderboard",
+  component: LeaderboardPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   videoRoute,
   uploadRoute,
   profileRoute,
   gamesRoute,
+  leaderboardRoute,
 ]);
 
 const router = createRouter({ routeTree });

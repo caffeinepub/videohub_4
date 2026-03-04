@@ -175,7 +175,11 @@ function drawCell(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TetrisGame() {
+interface TetrisGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function TetrisGame({ onGameOver }: TetrisGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
 
@@ -318,6 +322,7 @@ export default function TetrisGame() {
         s.running = false;
         s.over = true;
         setStatus("over");
+        onGameOver?.(s.score);
         if (tickRef.current) clearInterval(tickRef.current);
       }
 
@@ -330,7 +335,7 @@ export default function TetrisGame() {
     }
 
     draw();
-  }, [draw]);
+  }, [draw, onGameOver]);
 
   // ─── Start ────────────────────────────────────────────────────────────────
 

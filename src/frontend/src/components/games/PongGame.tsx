@@ -51,7 +51,11 @@ function initState(): GameState {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function PongGame() {
+interface PongGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function PongGame({ onGameOver }: PongGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(initState());
   const rafRef = useRef<number | null>(null);
@@ -214,6 +218,8 @@ export default function PongGame() {
         s.winner = "left";
         setStatus("over");
         setWinner("left");
+        // Player wins - score = player's score
+        onGameOver?.(s.scoreLeft);
         draw();
         return;
       }
@@ -230,6 +236,8 @@ export default function PongGame() {
         s.winner = "right";
         setStatus("over");
         setWinner("right");
+        // AI wins - score = player's score at time of loss
+        onGameOver?.(s.scoreLeft);
         draw();
         return;
       }
@@ -238,7 +246,7 @@ export default function PongGame() {
 
     draw();
     rafRef.current = requestAnimationFrame(loop);
-  }, [draw, resetBall]);
+  }, [draw, resetBall, onGameOver]);
 
   // ─── Start ────────────────────────────────────────────────────────────────
 

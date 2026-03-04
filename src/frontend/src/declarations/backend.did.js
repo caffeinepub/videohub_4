@@ -48,6 +48,12 @@ export const Video = IDL.Record({
   'viewCount' : IDL.Nat,
   'videoUrl' : IDL.Opt(IDL.Text),
 });
+export const LeaderboardEntry = IDL.Record({
+  'displayName' : IDL.Text,
+  'player' : IDL.Principal,
+  'score' : IDL.Int,
+  'timestamp' : IDL.Int,
+});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -93,6 +99,11 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCommentsForVideo' : IDL.Func([IDL.Text], [IDL.Vec(Comment)], ['query']),
   'getFeed' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Vec(Video)], ['query']),
+  'getLeaderboard' : IDL.Func(
+      [IDL.Text, IDL.Nat],
+      [IDL.Vec(LeaderboardEntry)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -104,6 +115,7 @@ export const idlService = IDL.Service({
   'incrementViewCount' : IDL.Func([IDL.Text], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'submitScore' : IDL.Func([IDL.Text, IDL.Int], [], []),
   'toggleLike' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'updateUserProfile' : IDL.Func([IDL.Text, IDL.Text], [], []),
 });
@@ -151,6 +163,12 @@ export const idlFactory = ({ IDL }) => {
     'viewCount' : IDL.Nat,
     'videoUrl' : IDL.Opt(IDL.Text),
   });
+  const LeaderboardEntry = IDL.Record({
+    'displayName' : IDL.Text,
+    'player' : IDL.Principal,
+    'score' : IDL.Int,
+    'timestamp' : IDL.Int,
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -196,6 +214,11 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCommentsForVideo' : IDL.Func([IDL.Text], [IDL.Vec(Comment)], ['query']),
     'getFeed' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Vec(Video)], ['query']),
+    'getLeaderboard' : IDL.Func(
+        [IDL.Text, IDL.Nat],
+        [IDL.Vec(LeaderboardEntry)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -211,6 +234,7 @@ export const idlFactory = ({ IDL }) => {
     'incrementViewCount' : IDL.Func([IDL.Text], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'submitScore' : IDL.Func([IDL.Text, IDL.Int], [], []),
     'toggleLike' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'updateUserProfile' : IDL.Func([IDL.Text, IDL.Text], [], []),
   });

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActor } from "./useActor";
-import type { Video, Comment, UserProfile } from "../backend.d";
+import type { Video, Comment, UserProfile, LeaderboardEntry } from "../backend.d";
 import type { backendInterface } from "../backend";
 import type { Principal } from "@icp-sdk/core/principal";
 
@@ -240,6 +240,36 @@ export function useAddComment() {
     },
     onSuccess: (_data, { videoId }) => {
       queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+    },
+  });
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+
+export function useGetLeaderboard(game: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<LeaderboardEntry[]>({
+    queryKey: ["leaderboard", game],
+    queryFn: async () => {
+      if (!actor || !game) return [];
+      return actor.getLeaderboard(game, 10n);
+    },
+    enabled: !!actor && !actorFetching && !!game,
+  });
+}
+
+export function useSubmitScore() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ game, score }: { game: string; score: bigint }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.submitScore(game, score);
+    },
+    onSuccess: (_data, { game }) => {
+      queryClient.invalidateQueries({ queryKey: ["leaderboard", game] });
     },
   });
 }

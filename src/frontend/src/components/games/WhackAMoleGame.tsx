@@ -14,7 +14,11 @@ const HOLE_IDS = Array.from({ length: HOLES }, (_, i) => `hole-${i}`);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function WhackAMoleGame() {
+interface WhackAMoleGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function WhackAMoleGame({ onGameOver }: WhackAMoleGameProps) {
   const [status, setStatus] = useState<"idle" | "running" | "over">("idle");
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
@@ -51,7 +55,8 @@ export default function WhackAMoleGame() {
     setActiveMoles(Array.from({ length: HOLES }, () => false));
     setWhackedMoles(Array.from({ length: HOLES }, () => false));
     setStatus("over");
-  }, [clearMoleTimers]);
+    onGameOver?.(scoreRef.current);
+  }, [clearMoleTimers, onGameOver]);
 
   // ─── Schedule a mole ───────────────────────────────────────────────────────
 

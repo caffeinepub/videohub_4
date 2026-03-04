@@ -105,6 +105,7 @@ export default function Layout({ children }: LayoutProps) {
   const navLinks = [
     { to: "/" as const, label: "HOME" },
     { to: "/games" as const, label: "GAMES" },
+    { to: "/leaderboard" as const, label: "SCORES" },
     ...(isAuthenticated
       ? ([
           { to: "/upload" as const, label: "UPLOAD" },

@@ -11,11 +11,10 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-
-
+import Int "mo:core/Int";
+import Order "mo:core/Order";
 
 actor {
-  // Prefabricated components
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -42,6 +41,13 @@ actor {
     videoId : Text;
   };
 
+  public type LeaderboardEntry = {
+    player : Principal;
+    displayName : Text;
+    score : Int;
+    timestamp : Int;
+  };
+
   public type UserProfile = {
     bio : Text;
     displayName : Text;
@@ -52,6 +58,7 @@ actor {
   let comments = Map.empty<Text, List.List<Comment>>();
   let videoLikes = Map.empty<Text, List.List<Principal>>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let leaderboardEntries = Map.empty<Text, List.List<LeaderboardEntry>>();
 
   // Video Management
   public shared ({ caller }) func createVideo(title : Text, description : Text, video : Storage.ExternalBlob, thumbnail : Storage.ExternalBlob) : async Text {
@@ -250,6 +257,44 @@ actor {
         videos.add(videoId, updatedVideo);
       };
       case (null) { Runtime.trap("Video not found") };
+    };
+  };
+
+  // Leaderboard
+  public shared ({ caller }) func submitScore(game : Text, score : Int) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can submit scores");
+    };
+
+    let entry : LeaderboardEntry = {
+      player = caller;
+      displayName = switch (userProfiles.get(caller)) {
+        case (null) { "" };
+        case (?profile) { profile.displayName };
+      };
+      score;
+      timestamp = Time.now();
+    };
+
+    let newEntries = List.empty<LeaderboardEntry>();
+    newEntries.add(entry);
+
+    leaderboardEntries.add(game, newEntries);
+  };
+
+  public query ({ caller }) func getLeaderboard(game : Text, limit : Nat) : async [LeaderboardEntry] {
+    switch (leaderboardEntries.get(game)) {
+      case (null) { [] };
+      case (?entries) {
+        let sortedEntries = entries.toArray().sort(
+          func(a, b) {
+            Int.compare(b.score, a.score);
+          }
+        );
+
+        let topEntries = sortedEntries.sliceToArray(0, Nat.min(limit, sortedEntries.size()));
+        topEntries;
+      };
     };
   };
 };

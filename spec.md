@@ -1,42 +1,41 @@
 # VideoHub
 
 ## Current State
-- Dark industrial/graphite theme with crimson accents (Space Grotesk + JetBrains Mono fonts)
-- Pages: Home (video feed), Video, Upload (file or URL), Profile, Games
-- Games: Snake, Memory Match, Reaction Speed
-- Nav: Home, Games, Upload (auth), Profile (auth)
-- No search functionality
+- Video sharing platform with retro/arcade aesthetic (CRT scanlines, neon glow, pixel fonts)
+- 10 arcade games: Snake, Memory Match, Reaction Speed, Tetris, Pong, Whack-a-Mole, Space Invaders, Breakout, Flappy Bird, 2048
+- Video feed with upload (URL or file), comments, likes, profiles
+- DuckDuckGo URL search bar in nav and home page
+- Authorization and blob-storage components active
+- No leaderboard system exists yet
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Retro theme**: Replace the current industrial dark theme with a retro/arcade aesthetic. Use a pixel/CRT-inspired look: neon green/amber/cyan accents on dark background, scanline effects, pixelated fonts (Press Start 2P or similar retro font from Google Fonts), glowing borders, retro button styles
-- **URL Search bar**: Add a search bar in the nav (desktop) and on the home page that lets users search the web via a URL (opens a URL or performs a web search in a new tab). Include a button labeled "Search" or with a search icon. On submit, open the URL or Google search in a new tab.
-- **More games**: Add at least 3 more games to GamesPage:
-  - Tetris (classic block-stacking game)
-  - Pong (paddle vs ball)
-  - Whack-a-Mole (click the mole)
+- Backend: `submitScore(game: string, score: bigint): Promise<void>` — saves a score entry (principal + score + timestamp) for a game
+- Backend: `getLeaderboard(game: string, limit: bigint): Promise<Array<LeaderboardEntry>>` — returns top N scores for a game, with display name
+- Backend: `LeaderboardEntry` type: `{ player: Principal, displayName: string, score: bigint, timestamp: bigint }`
+- Frontend: `LeaderboardPanel` component — shows top 10 scores for a given game, with rank, name, score, and date
+- Frontend: Each game component gets a `onGameOver(score: number)` callback prop; when a game ends the score is submitted (if user is authenticated)
+- Frontend: A "Leaderboard" tab/button on the GamesPage that shows a global leaderboard view per game
+- Frontend: Each game card on GamesPage shows "VIEW SCORES" link
 
 ### Modify
-- `index.css`: Replace OKLCH color tokens and fonts with retro palette. Keep OKLCH system but use retro colors: dark background (near black), neon green primary, amber secondary, cyan accent. Replace body font with a retro font (VT323 or Press Start 2P for headings, share tech mono for body). Add CRT scanline overlay effect, pixel border utilities, glow effects.
-- `Layout.tsx`: Add URL search bar in the nav bar (desktop). Style the nav with retro pixel borders and glow.
-- `HomePage.tsx`: Add a prominent URL search bar at the top of the page.
-- `GamesPage.tsx`: Register the 3 new games in the GAMES array.
+- GamesPage: Add leaderboard panel alongside/below active game, show scores button per game card
+- All 10 game components: Accept optional `onGameOver` callback, call it when a natural game-over event occurs (not on quit)
+- Backend main.mo: Add score storage and leaderboard query logic
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Update `index.css` with retro theme tokens, retro fonts, scanline/CRT CSS effects, pixel border utility classes, and neon glow effects
-2. Update `tailwind.config.js` if needed for custom font family
-3. Update `Layout.tsx` to add URL search bar in nav and apply retro nav styling
-4. Update `HomePage.tsx` to add URL search bar section at top
-5. Create `src/frontend/src/components/games/TetrisGame.tsx`
-6. Create `src/frontend/src/components/games/PongGame.tsx`
-7. Create `src/frontend/src/components/games/WhackAMoleGame.tsx`
-8. Update `GamesPage.tsx` to include the 3 new games
+1. Generate backend with submitScore, getLeaderboard, LeaderboardEntry
+2. Build LeaderboardPanel component
+3. Update each game component to accept and call onGameOver callback
+4. Update GamesPage to wire onGameOver → submitScore, show leaderboard panel per game
 
 ## UX Notes
-- Retro theme: Think arcade cabinet, CRT monitor aesthetic. Neon glow on active elements. Pixel font for titles/headings, monospace for body text.
-- URL search: User types a URL or query. If it looks like a URL (starts with http/https or has a dot), open it directly. Otherwise, open a Google search in a new tab.
-- Games grid should expand to show all 6 games in a 2-col or 3-col grid.
+- Leaderboard appears below the active game in retro pixel style
+- Only authenticated users can submit scores; guests can still view leaderboard
+- Display names come from UserProfile; fall back to truncated principal if no profile
+- Score submission is fire-and-forget (no blocking UX)
+- Top 10 scores shown per game

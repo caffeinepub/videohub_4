@@ -26,6 +26,12 @@ export interface Video {
     viewCount: bigint;
     videoUrl?: string;
 }
+export interface LeaderboardEntry {
+    displayName: string;
+    player: Principal;
+    score: bigint;
+    timestamp: bigint;
+}
 export interface Comment {
     id: bigint;
     content: string;
@@ -51,6 +57,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getCommentsForVideo(videoId: string): Promise<Array<Comment>>;
     getFeed(page: bigint, pageSize: bigint): Promise<Array<Video>>;
+    getLeaderboard(game: string, limit: bigint): Promise<Array<LeaderboardEntry>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVideo(id: string): Promise<Video | null>;
     getVideosByCreator(creator: Principal): Promise<Array<Video>>;
@@ -58,6 +65,7 @@ export interface backendInterface {
     incrementViewCount(videoId: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    submitScore(game: string, score: bigint): Promise<void>;
     toggleLike(videoId: string): Promise<boolean>;
     updateUserProfile(displayName: string, bio: string): Promise<void>;
 }

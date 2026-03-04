@@ -39,7 +39,11 @@ function newFood(snake: Point[]): Point {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SnakeGame() {
+interface SnakeGameProps {
+  onGameOver?: (score: number) => void;
+}
+
+export default function SnakeGame({ onGameOver }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef({
     snake: [{ x: 10, y: 10 }] as Point[],
@@ -156,6 +160,7 @@ export default function SnakeGame() {
       s.running = false;
       s.dead = true;
       setStatus("dead");
+      onGameOver?.(s.score);
       if (tickRef.current) clearInterval(tickRef.current);
       draw();
       return;
@@ -166,6 +171,7 @@ export default function SnakeGame() {
       s.running = false;
       s.dead = true;
       setStatus("dead");
+      onGameOver?.(s.score);
       if (tickRef.current) clearInterval(tickRef.current);
       draw();
       return;
@@ -181,7 +187,7 @@ export default function SnakeGame() {
     }
 
     draw();
-  }, [draw]);
+  }, [draw, onGameOver]);
 
   // ─── Start / Restart ──────────────────────────────────────────────────────
 

@@ -18,6 +18,12 @@ export interface Comment {
   'videoId' : string,
 }
 export type ExternalBlob = Uint8Array;
+export interface LeaderboardEntry {
+  'displayName' : string,
+  'player' : Principal,
+  'score' : bigint,
+  'timestamp' : bigint,
+}
 export interface UserProfile { 'bio' : string, 'displayName' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -76,6 +82,7 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCommentsForVideo' : ActorMethod<[string], Array<Comment>>,
   'getFeed' : ActorMethod<[bigint, bigint], Array<Video>>,
+  'getLeaderboard' : ActorMethod<[string, bigint], Array<LeaderboardEntry>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVideo' : ActorMethod<[string], [] | [Video]>,
   'getVideosByCreator' : ActorMethod<[Principal], Array<Video>>,
@@ -83,6 +90,7 @@ export interface _SERVICE {
   'incrementViewCount' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'submitScore' : ActorMethod<[string, bigint], undefined>,
   'toggleLike' : ActorMethod<[string], boolean>,
   'updateUserProfile' : ActorMethod<[string, string], undefined>,
 }
